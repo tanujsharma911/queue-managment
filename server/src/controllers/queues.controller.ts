@@ -72,22 +72,10 @@ export class QueuesController {
         return;
       }
 
-      const nextToken = await queueManager.getNextInQueue(queueId);
-
-      if (!nextToken) {
-        await queueManager.updateQueue(queueId, { status: "Available" });
-        res.status(200).json({ message: "No tokens in queue" });
-        return;
-      }
-
-      const updatedQueue = await queueManager.updateQueue(queueId, {
-        status: "Occupied",
-        token: nextToken,
-      });
+      const updatedQueue = await queueManager.callNextToken(queueId);
 
       res.status(200).json({
         message: "Next token called successfully",
-        token: nextToken,
         queue: updatedQueue,
       });
     } catch (error) {
@@ -117,10 +105,11 @@ export class QueuesController {
         return;
       }
 
-      await queueManager.endCurrentInQueue(queueId);
+      const updatedQueue = await queueManager.endCurrentInQueue(queueId);
 
       res.status(200).json({
         message: "Current token ended successfully",
+        queue: updatedQueue,
       });
     } catch (error) {
       console.error("Error ending current token in queue:", error);

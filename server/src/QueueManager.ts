@@ -2,6 +2,7 @@ import { EventEmitter } from "events";
 import { tokenManager } from "./TokenManager.js";
 import type { QueueType, TokenType } from "./types/types.js";
 import { Queue } from "./models/queue.model.js";
+import { Token } from "./models/token.model.js";
 
 class QueueManager extends EventEmitter {
   constructor() {
@@ -20,11 +21,17 @@ class QueueManager extends EventEmitter {
   };
 
   public getQueueTokens = async (queueId: string): Promise<TokenType[]> => {
-    const todaysTokens = await tokenManager.getAllTokens();
-
-    const tokens = todaysTokens
-      .filter((token) => token.queueId === queueId)
-      .sort((a, b) => a.issuedAt.getTime() - b.issuedAt.getTime());
+    const tokens = await Token.aggregate([
+      {
+        $match: { queueId },
+      },
+      {
+        $sort: { issuedAt: 1 },
+      },
+      {
+        $limit: 100,
+      },
+    ]);
 
     return tokens;
   };
@@ -57,36 +64,30 @@ class QueueManager extends EventEmitter {
     return updatedQueue as QueueType;
   };
 
-  public getNextInQueue = async (queueId: string): Promise<string | null> => {
-    const todaysTokens = await tokenManager.getAllTokens();
+  public callNextToken = async (queueId: string) => {
+    const nextTokens = await Token.find({ queueId, status: "Waiting" }).sort({
+      issuedAt: 1,
+    });
 
-    const sortedTokens = todaysTokens
-      .filter((token) => token.queueId === queueId)
-      .sort((a, b) => a.issuedAt.getTime() - b.issuedAt.getTime());
-
-    const tokenToCall = sortedTokens.find(
-      (token) => token.queueId === queueId && token.status === "Waiting",
-    );
+    const tokenToCall = nextTokens[0];
 
     if (tokenToCall) {
       await tokenManager.updateToken(tokenToCall.token, {
         status: "Called",
         calledAt: new Date(),
       });
-      await this.updateQueue(queueId, { status: "Occupied" });
-
-      return tokenToCall.token;
+      return await this.updateQueue(queueId, {
+        status: "Occupied",
+        token: tokenToCall.token,
+      });
     }
-
-    return null;
   };
 
   public endCurrentInQueue = async (queueId: string) => {
-    const sortedTokens = await tokenManager.getAllTokens();
-
-    const currentToken = sortedTokens.find(
-      (token) => token.queueId === queueId && token.status === "Called",
-    );
+    const currentToken = await Token.findOne({
+      queueId,
+      status: "Called",
+    });
 
     if (currentToken) {
       await tokenManager.updateToken(currentToken.token, {
@@ -94,7 +95,7 @@ class QueueManager extends EventEmitter {
         completedAt: new Date(),
       });
 
-      await this.updateQueue(queueId, { status: "Available" });
+      return await this.updateQueue(queueId, { status: "Available" });
     }
   };
 
@@ -116,16 +117,6 @@ class QueueManager extends EventEmitter {
     const queues = await this.getQueues();
 
     this.emit("queueUpdated", { queues });
-  };
-
-  public getQueueLength = async (queueId: string): Promise<number> => {
-    const todaysTokens = await tokenManager.getAllTokens();
-
-    const sortedTokens = todaysTokens.filter(
-      (token) => token.queueId === queueId,
-    );
-
-    return sortedTokens.length;
   };
 }
 

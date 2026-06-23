@@ -1,9 +1,17 @@
 import type { Request, Response } from "express";
 import { tokenManager } from "../TokenManager.js";
 import { describe } from "node:test";
+import { Token } from "../models/token.model.js";
 
 export const statsController = async (req: Request, res: Response) => {
-  const tokens = await tokenManager.getAllTokens();
+  const tokens = await Token.aggregate([
+    {
+      $sort: { issuedAt: -1 },
+    },
+    {
+      $limit: 100,
+    },
+  ]);
 
   // Total Waiting
   const totalWaiting = tokens.filter(
@@ -52,7 +60,19 @@ export const statsController = async (req: Request, res: Response) => {
   let patientsArrived = tokens.length;
 
   // Yesterday Arrived
-  const tokensYesterday = await tokenManager.getAllTokensOfYesterday();
+  const yesterdayStartTime = new Date();
+  yesterdayStartTime.setDate(yesterdayStartTime.getDate() - 1);
+  yesterdayStartTime.setHours(0, 0, 0, 0);
+
+  const yesterdayEndTime = new Date();
+  yesterdayEndTime.setDate(yesterdayEndTime.getDate() - 1);
+  yesterdayEndTime.setHours(23, 59, 59, 999);
+
+  const tokensYesterday = tokens.filter(
+    (token) =>
+      token.issuedAt >= yesterdayStartTime &&
+      token.issuedAt <= yesterdayEndTime,
+  );
   let patientsArrivedYesterday = tokensYesterday.length;
 
   const response = [

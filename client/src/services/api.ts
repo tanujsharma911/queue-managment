@@ -108,6 +108,7 @@ class BackendApi {
 
   public endCurrent = async (queueId: string) => {
     try {
+      console.log(`Ending current token in queue: ${queueId}`);
       const response = await this.api.get(`/api/queues/${queueId}/end-current`);
       return response.data;
     } catch (err) {

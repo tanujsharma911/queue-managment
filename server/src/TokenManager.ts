@@ -41,15 +41,17 @@ class TokenManager {
   };
 
   public getEstimatedWaitTime = async (): Promise<number> => {
-    const [tokensToday, tokensYesterday] = await Promise.all([
-      this.getAllTokens(),
-      this.getAllTokensOfYesterday(),
+    const recentTokens = await Token.aggregate([
+      {
+        $sort: { issuedAt: -1 },
+      },
+      {
+        $match: { calledAt: { $ne: null } },
+      },
+      {
+        $limit: 5,
+      },
     ]);
-
-    const recentTokens = [...tokensToday, ...tokensYesterday]
-      .filter((token) => token.calledAt)
-      .sort((a, b) => b.issuedAt.getTime() - a.issuedAt.getTime())
-      .slice(0, 5);
 
     if (recentTokens.length === 0) {
       return 0;
@@ -143,48 +145,6 @@ class TokenManager {
 
     return `T${next.toString().padStart(4, "0")}`;
   }
-
-  /**
-   *
-   * @returns All tokens created today
-   */
-  public getAllTokens = async (): Promise<TokenType[]> => {
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const tokensToday = await Token.aggregate([
-      {
-        $match: {
-          issuedAt: { $gte: startOfDay, $lte: endOfDay },
-        },
-      },
-    ]);
-
-    return tokensToday;
-  };
-
-  public getAllTokensOfYesterday = async (): Promise<TokenType[]> => {
-    const startOfDay = new Date();
-    startOfDay.setDate(startOfDay.getDate() - 1);
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date();
-    endOfDay.setDate(endOfDay.getDate() - 1);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const tokensYesterday = await Token.aggregate([
-      {
-        $match: {
-          issuedAt: { $gte: startOfDay, $lte: endOfDay },
-        },
-      },
-    ]);
-
-    return tokensYesterday;
-  };
 }
 
 const tokenManager = new TokenManager();

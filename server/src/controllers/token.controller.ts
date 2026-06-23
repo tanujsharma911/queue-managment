@@ -1,10 +1,18 @@
 import type { Request, Response } from "express";
 import { tokenManager } from "../TokenManager.js";
 import type { TokenType } from "../types/types.js";
+import { Token } from "../models/token.model.js";
 
 export class TokenController {
   public getTokens = async (req: Request, res: Response) => {
-    const tokens = await tokenManager.getAllTokens();
+    const tokens = await Token.aggregate([
+      {
+        $sort: { issuedAt: -1 },
+      },
+      {
+        $limit: 100,
+      },
+    ]);
 
     res.status(200).json({ tokens });
   };
