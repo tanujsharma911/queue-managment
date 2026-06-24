@@ -7,37 +7,109 @@ Queue Cure is a live clinic queue management system for small and medium outpati
 
 ### [Live Demo](https://queuecure.tanujsharma.me)
 
-It gives:
-- receptionists a fast control panel to add patients and call the next token,
-- a large-screen waiting room display that updates live,
-- and a patient-facing token tracker with real-time position and estimated wait.
+## Problem
 
-## Product Goals and Outcomes
+Small clinics still manage queues manually.
 
-1. Can a receptionist add a patient and assign a token in under 10 seconds?
-   - Yes. The receptionist flow is designed as a short form (name + queue + add).
-2. Does the patient-facing screen update live without page refresh?
-   - Yes. Socket events push queue updates to connected clients.
-3. Is estimated wait time computed from real data and not hardcoded?
-   - Yes. Wait time is calculated from recent real token history (called timestamps), then multiplied by the patient queue position.
+- Patients repeatedly ask reception about their turn.
+- Waiting room displays are often not live.
+- Doctors and receptionists lack real-time visibility.
+- Patients cannot estimate waiting time.
+
+## Solution
+
+Queue Cure digitizes the entire outpatient queue.
+
+- Receptionists issue tokens instantly.
+- Waiting room displays update automatically.
+- Patients track their token in real time.
+- Wait time is calculated using actual historical data.
+
+## Impact
+
+- Reduced receptionist interruptions.
+- Better patient experience.
+- Transparent queue visibility.
+- No manual refresh required.
 
 ## Screens
 
 1. Receptionist view
-   - Add patient to queue.
-   - Call next token in each room.
-   - End current token.
-   - Filter and sort live queue table.
-   - View live operational stats.
+- Add patient to queue.
+- Call next token in each room.
+- End current token.
+- Filter and sort live queue table.
+- View live operational stats.
 
 2. Waiting room display
-   - Shows each room and currently active token.
-   - Auto-refreshes based on live events.
+- Shows each room and currently active token.
+- Auto-refreshes based on live events.
 
 3. Patient token view
-   - Search by token.
-   - Shows queue name, token in room, position in queue, and estimated wait.
-   - Live status badge updates.
+- Search by token.
+- Shows queue name, token in room, position in queue, and estimated wait.
+- Live status badge updates.
+
+## Architecture Design
+```
+                   ┌─────────────────┐
+                   │ Receptionist UI │
+                   └────────┬────────┘
+                            │
+                            ▼
+                   ┌─────────────────┐
+                   │ Express API     │
+                   │ Queue Service   │
+                   └────────┬────────┘
+                            │
+                            ▼
+                   ┌─────────────────┐
+                   │ MongoDB         │
+                   └────────┬────────┘
+                            │
+                    queueUpdated Event
+                            │
+                            ▼
+                   ┌─────────────────┐
+                   │ Socket.IO Server│
+                   └──────┬─────┬────┘
+                          │     │
+             ┌────────────┘     └────────────┐
+             ▼                               ▼
+    ┌────────────────┐             ┌────────────────┐
+    │ Waiting Screen │             │ Patient Screen │
+    └────────────────┘             └────────────────┘
+```
+
+## Socket Diagram
+
+```
+               Receptionist
+                     │
+                     │ Add Patient
+                     ▼
+               Backend API
+                     │
+                     │ Save Token
+                     ▼
+                  MongoDB
+                     │
+                     │ Success
+                     ▼
+               Queue Service
+                     │
+                     │ emit("queueUpdated")
+                     ▼
+               Socket.IO Server
+                     │
+               ┌─────┴─────────────┐
+               ▼                   ▼
+         Waiting Room      Patient Tracker
+            Display           Screen
+
+                  Refetch Queries
+                  Update UI
+```
 
 ## Tech Stack
 
@@ -45,13 +117,6 @@ It gives:
 - Backend: Node.js, Express, TypeScript, MongoDB (Mongoose), Socket.IO
 - Auth: JWT via HTTP-only cookie
 
-## Real-Time Design
-
-1. Backend queue operations emit queueUpdated events.
-2. Socket.IO server forwards updates to connected clients.
-3. Frontend screens listen for queueUpdated and refresh relevant query data.
-
-This keeps receptionist, waiting room display, and patient view in sync.
 
 ## Wait Time Logic
 
@@ -64,13 +129,6 @@ Estimated wait is data-driven:
 
 This avoids fixed hardcoded wait estimates.
 
-## Monorepo Structure
-
-```text
-queue_cure/
-  client/   # React frontend
-  server/   # Express + MongoDB Connection + Socket.IO backend
-```
 
 ## Local Setup
 

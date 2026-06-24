@@ -66,7 +66,7 @@ const ViewToken = () => {
       queryClient.invalidateQueries({ queryKey: ["token"] });
     }
 
-    const socket = io("http://localhost:3000", {
+    const socket = io(import.meta.env.VITE_WS_URL, {
       autoConnect: true,
       withCredentials: true,
     });
