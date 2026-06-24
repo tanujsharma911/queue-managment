@@ -3,13 +3,14 @@
 
 Queue Cure is a live clinic queue management system for small and medium outpatient setups.
 
+![Preview](https://github.com/user-attachments/assets/e14da8ba-5e76-47d4-874d-220731dbc4a5)
+
+### [Live Demo](https://queuecure.tanujsharma.me)
+
 It gives:
 - receptionists a fast control panel to add patients and call the next token,
 - a large-screen waiting room display that updates live,
 - and a patient-facing token tracker with real-time position and estimated wait.
-
-One-sentence demo moment:
-When the receptionist clicks Call Next, the waiting room TV and the patient phone view update instantly without refresh, showing the new token in room.
 
 ## Product Goals and Outcomes
 
@@ -56,7 +57,7 @@ This keeps receptionist, waiting room display, and patient view in sync.
 
 Estimated wait is data-driven:
 
-1. Fetch recent tokens from today and yesterday.
+1. Fetch recent tokens.
 2. Keep the latest called tokens (up to 5).
 3. Compute average wait per token from calledAt - issuedAt.
 4. Multiply by patient position in waiting list.
@@ -68,7 +69,7 @@ This avoids fixed hardcoded wait estimates.
 ```text
 queue_cure/
   client/   # React frontend
-  server/   # Express + MongoDB + Socket.IO backend
+  server/   # Express + MongoDB Connection + Socket.IO backend
 ```
 
 ## Local Setup
@@ -141,39 +142,26 @@ pnpm run dev
 ## API Endpoints
 
 ### Health
-- GET /health
+- `GET /health`
 
 ### User
-- POST /api/users/signup
-- POST /api/users/login
-- POST /api/users/logout
-- GET /api/users/me
+- `POST /api/users/signup`
+- `POST /api/users/login`
+- `POST /api/users/logout`
+- `GET /api/users/me`
 
 ### Queue
-- GET /api/queues
-- POST /api/queues
-- GET /api/queues/:queueId/call-next
-- GET /api/queues/:queueId/end-current
+- `GET /api/queues`
+- `POST /api/queues`
+- `GET /api/queues/:queueId/call-next`
+- `GET /api/queues/:queueId/end-current`
 
 ### Token
-- GET /api/tokens
-- GET /api/tokens/:token
-- POST /api/tokens
-- PUT /api/tokens/:token
-- DELETE /api/tokens/:token
+- `GET /api/tokens`
+- `GET /api/tokens/:token`
+- `POST /api/tokens`
+- `PUT /api/tokens/:token`
+- `DELETE /api/tokens/:token`
 
 ### Stats
-- GET /api/stats
-
-## UI and Theme
-
-- Includes light, dark, and system theme modes.
-- Theme is persisted in local storage.
-
-## Demo Checklist
-
-1. Login as receptionist and add a patient token.
-2. Open waiting room display in a second tab.
-3. Open patient token view in a third tab and track the same token.
-4. Click Call Next on receptionist dashboard.
-5. Verify live update on both waiting room and patient token view.
+- `GET /api/stats`
